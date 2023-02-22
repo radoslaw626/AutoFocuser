@@ -90,6 +90,9 @@
     <PackageReference Include="AForge.Imaging">
       <Version>2.2.5</Version>
     </PackageReference>
+    <PackageReference Include="AForge.Imaging.Formats">
+      <Version>2.2.5</Version>
+    </PackageReference>
     <PackageReference Include="AForge.Math">
       <Version>2.2.5</Version>
     </PackageReference>
@@ -105,6 +108,9 @@
     <PackageReference Include="FSharp.Core">
       <Version>4.6.2</Version>
     </PackageReference>
+    <PackageReference Include="LibRawSharp">
+      <Version>0.0.2</Version>
+    </PackageReference>
     <PackageReference Include="Magick.NET-Q16-AnyCPU">
       <Version>12.3.0</Version>
     </PackageReference>
@@ -117,6 +123,12 @@
     <PackageReference Include="MetadataExtractor">
       <Version>2.7.2</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EDSDKLib\EDSDKLib.csproj">
+      <Project>{15e99248-6161-46a4-9183-609ca62406a6}</Project>
+      <Name>EDSDKLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
