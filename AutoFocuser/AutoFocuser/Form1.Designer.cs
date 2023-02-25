@@ -38,7 +38,7 @@
             this.connectButton = new System.Windows.Forms.Button();
             this.hfdLabel = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.ZoomTrackBar = new System.Windows.Forms.TrackBar();
             this.panel1 = new System.Windows.Forms.Panel();
             this.CameraListBox = new System.Windows.Forms.ListBox();
             this.MainProgressBar = new System.Windows.Forms.ProgressBar();
@@ -70,6 +70,9 @@
             this.SaveFolderBrowser = new System.Windows.Forms.FolderBrowserDialog();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.stepperMovementPanel = new System.Windows.Forms.Panel();
+            this.CounterclockwiseCheckBox = new System.Windows.Forms.CheckBox();
+            this.ClockwiseCheckBox = new System.Windows.Forms.CheckBox();
             this.ThresholdLabel = new System.Windows.Forms.Label();
             this.ThresholdTextBox = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
@@ -78,8 +81,9 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.ControllerConnectionLabel = new System.Windows.Forms.Label();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.HomingButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ZoomTrackBar)).BeginInit();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.LiveViewPicBox)).BeginInit();
             this.SettingsGroupBox.SuspendLayout();
@@ -89,16 +93,16 @@
             this.InitGroupBox.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.stepperMovementPanel.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.tabPage4.SuspendLayout();
             this.SuspendLayout();
             // 
             // MoveStepperButton
             // 
-            this.MoveStepperButton.Enabled = false;
-            this.MoveStepperButton.Location = new System.Drawing.Point(271, 34);
+            this.MoveStepperButton.Location = new System.Drawing.Point(189, 59);
             this.MoveStepperButton.Name = "MoveStepperButton";
-            this.MoveStepperButton.Size = new System.Drawing.Size(116, 23);
+            this.MoveStepperButton.Size = new System.Drawing.Size(86, 55);
             this.MoveStepperButton.TabIndex = 0;
             this.MoveStepperButton.Text = "Move Stepper";
             this.MoveStepperButton.UseVisualStyleBackColor = true;
@@ -107,7 +111,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(19, 34);
+            this.label1.Location = new System.Drawing.Point(18, 20);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(105, 16);
             this.label1.TabIndex = 1;
@@ -115,9 +119,9 @@
             // 
             // stepsTextBox
             // 
-            this.stepsTextBox.Location = new System.Drawing.Point(147, 34);
+            this.stepsTextBox.Location = new System.Drawing.Point(189, 20);
             this.stepsTextBox.Name = "stepsTextBox";
-            this.stepsTextBox.Size = new System.Drawing.Size(100, 22);
+            this.stepsTextBox.Size = new System.Drawing.Size(211, 22);
             this.stepsTextBox.TabIndex = 2;
             // 
             // serialPort1
@@ -163,14 +167,14 @@
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
             // 
-            // trackBar1
+            // ZoomTrackBar
             // 
-            this.trackBar1.Enabled = false;
-            this.trackBar1.Location = new System.Drawing.Point(71, 156);
-            this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(206, 56);
-            this.trackBar1.TabIndex = 7;
-            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            this.ZoomTrackBar.Enabled = false;
+            this.ZoomTrackBar.Location = new System.Drawing.Point(71, 156);
+            this.ZoomTrackBar.Name = "ZoomTrackBar";
+            this.ZoomTrackBar.Size = new System.Drawing.Size(206, 56);
+            this.ZoomTrackBar.TabIndex = 7;
+            this.ZoomTrackBar.Scroll += new System.EventHandler(this.trackBar1_Scroll);
             // 
             // panel1
             // 
@@ -474,14 +478,12 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.stepperMovementPanel);
             this.tabPage1.Controls.Add(this.ThresholdLabel);
             this.tabPage1.Controls.Add(this.ThresholdTextBox);
             this.tabPage1.Controls.Add(this.label8);
             this.tabPage1.Controls.Add(this.outerDiameterTextBox);
-            this.tabPage1.Controls.Add(this.stepsTextBox);
-            this.tabPage1.Controls.Add(this.trackBar1);
-            this.tabPage1.Controls.Add(this.label1);
-            this.tabPage1.Controls.Add(this.MoveStepperButton);
+            this.tabPage1.Controls.Add(this.ZoomTrackBar);
             this.tabPage1.Controls.Add(this.panel1);
             this.tabPage1.Controls.Add(this.hfdLabel);
             this.tabPage1.Controls.Add(this.ManualCalculationButton);
@@ -493,10 +495,46 @@
             this.tabPage1.Text = "Manual";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // stepperMovementPanel
+            // 
+            this.stepperMovementPanel.Controls.Add(this.HomingButton);
+            this.stepperMovementPanel.Controls.Add(this.label1);
+            this.stepperMovementPanel.Controls.Add(this.CounterclockwiseCheckBox);
+            this.stepperMovementPanel.Controls.Add(this.MoveStepperButton);
+            this.stepperMovementPanel.Controls.Add(this.ClockwiseCheckBox);
+            this.stepperMovementPanel.Controls.Add(this.stepsTextBox);
+            this.stepperMovementPanel.Enabled = false;
+            this.stepperMovementPanel.Location = new System.Drawing.Point(29, 6);
+            this.stepperMovementPanel.Name = "stepperMovementPanel";
+            this.stepperMovementPanel.Size = new System.Drawing.Size(419, 144);
+            this.stepperMovementPanel.TabIndex = 15;
+            // 
+            // CounterclockwiseCheckBox
+            // 
+            this.CounterclockwiseCheckBox.AutoSize = true;
+            this.CounterclockwiseCheckBox.Location = new System.Drawing.Point(21, 94);
+            this.CounterclockwiseCheckBox.Name = "CounterclockwiseCheckBox";
+            this.CounterclockwiseCheckBox.Size = new System.Drawing.Size(134, 20);
+            this.CounterclockwiseCheckBox.TabIndex = 14;
+            this.CounterclockwiseCheckBox.Text = "Counterclockwise";
+            this.CounterclockwiseCheckBox.UseVisualStyleBackColor = true;
+            this.CounterclockwiseCheckBox.CheckedChanged += new System.EventHandler(this.CounterclockwiseCheckBox_CheckedChanged);
+            // 
+            // ClockwiseCheckBox
+            // 
+            this.ClockwiseCheckBox.AutoSize = true;
+            this.ClockwiseCheckBox.Location = new System.Drawing.Point(21, 59);
+            this.ClockwiseCheckBox.Name = "ClockwiseCheckBox";
+            this.ClockwiseCheckBox.Size = new System.Drawing.Size(90, 20);
+            this.ClockwiseCheckBox.TabIndex = 13;
+            this.ClockwiseCheckBox.Text = "Clockwise";
+            this.ClockwiseCheckBox.UseVisualStyleBackColor = true;
+            this.ClockwiseCheckBox.CheckedChanged += new System.EventHandler(this.ClockwiseCheckBox_CheckedChanged);
+            // 
             // ThresholdLabel
             // 
             this.ThresholdLabel.AutoSize = true;
-            this.ThresholdLabel.Location = new System.Drawing.Point(631, 65);
+            this.ThresholdLabel.Location = new System.Drawing.Point(655, 65);
             this.ThresholdLabel.Name = "ThresholdLabel";
             this.ThresholdLabel.Size = new System.Drawing.Size(131, 16);
             this.ThresholdLabel.TabIndex = 12;
@@ -506,14 +544,14 @@
             // 
             this.ThresholdTextBox.Location = new System.Drawing.Point(504, 59);
             this.ThresholdTextBox.Name = "ThresholdTextBox";
-            this.ThresholdTextBox.Size = new System.Drawing.Size(100, 22);
+            this.ThresholdTextBox.Size = new System.Drawing.Size(125, 22);
             this.ThresholdTextBox.TabIndex = 11;
             this.ThresholdTextBox.Text = "6";
             // 
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(631, 37);
+            this.label8.Location = new System.Drawing.Point(655, 37);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(155, 16);
             this.label8.TabIndex = 10;
@@ -523,7 +561,7 @@
             // 
             this.outerDiameterTextBox.Location = new System.Drawing.Point(504, 31);
             this.outerDiameterTextBox.Name = "outerDiameterTextBox";
-            this.outerDiameterTextBox.Size = new System.Drawing.Size(100, 22);
+            this.outerDiameterTextBox.Size = new System.Drawing.Size(125, 22);
             this.outerDiameterTextBox.TabIndex = 9;
             this.outerDiameterTextBox.Text = "300";
             // 
@@ -569,6 +607,16 @@
             this.tabPage4.Text = "Camera";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // HomingButton
+            // 
+            this.HomingButton.Location = new System.Drawing.Point(314, 59);
+            this.HomingButton.Name = "HomingButton";
+            this.HomingButton.Size = new System.Drawing.Size(86, 55);
+            this.HomingButton.TabIndex = 15;
+            this.HomingButton.Text = "Homing";
+            this.HomingButton.UseVisualStyleBackColor = true;
+            this.HomingButton.Click += new System.EventHandler(this.HomingButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -582,7 +630,7 @@
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ZoomTrackBar)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.LiveViewPicBox)).EndInit();
@@ -597,6 +645,8 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
+            this.stepperMovementPanel.ResumeLayout(false);
+            this.stepperMovementPanel.PerformLayout();
             this.tabPage3.ResumeLayout(false);
             this.tabPage3.PerformLayout();
             this.tabPage4.ResumeLayout(false);
@@ -614,7 +664,7 @@
         private System.Windows.Forms.Button connectButton;
         private System.Windows.Forms.Label hfdLabel;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.TrackBar ZoomTrackBar;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.ListBox CameraListBox;
         private System.Windows.Forms.ProgressBar MainProgressBar;
@@ -654,6 +704,10 @@
         private System.Windows.Forms.Label ControllerConnectionLabel;
         private System.Windows.Forms.Label ThresholdLabel;
         private System.Windows.Forms.TextBox ThresholdTextBox;
+        private System.Windows.Forms.Panel stepperMovementPanel;
+        private System.Windows.Forms.CheckBox CounterclockwiseCheckBox;
+        private System.Windows.Forms.CheckBox ClockwiseCheckBox;
+        private System.Windows.Forms.Button HomingButton;
     }
 }
 

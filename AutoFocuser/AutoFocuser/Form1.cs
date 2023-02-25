@@ -73,16 +73,19 @@ namespace AutoFocuser
 
         private void goButton_Click(object sender, EventArgs e)
         {
-            serialPort1.Write(stepsTextBox.Text);
+            if (CounterclockwiseCheckBox.Checked == true)
+                serialPort1.Write(stepsTextBox.Text + ",1");
+            else if (ClockwiseCheckBox.Checked == true)
+                serialPort1.Write(stepsTextBox.Text + ",0");
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            trackBar1.Minimum = 1;
-            trackBar1.Maximum = 4;
-            trackBar1.SmallChange = 1;
-            trackBar1.LargeChange = 1;
-            trackBar1.UseWaitCursor = false;
+            ZoomTrackBar.Minimum = 1;
+            ZoomTrackBar.Maximum = 4;
+            ZoomTrackBar.SmallChange = 1;
+            ZoomTrackBar.LargeChange = 1;
+            ZoomTrackBar.UseWaitCursor = false;
             this.DoubleBuffered = true;
         }
 
@@ -94,7 +97,7 @@ namespace AutoFocuser
         private void connectButton_Click(object sender, EventArgs e)
         {
             serialPort1.Open();
-            MoveStepperButton.Enabled = true;
+            stepperMovementPanel.Enabled = true;
             ControllerConnectionLabel.Text = "Connected";
         }
 
@@ -111,9 +114,9 @@ namespace AutoFocuser
             TakeAndDownloadImage();
         }
 
-
         private static System.Timers.Timer _timer;
         private static bool _imageConverted = false;
+
         public void TakeAndDownloadImage()
         {
             MainCamera.TakePhotoShutterAsync();
@@ -128,15 +131,10 @@ namespace AutoFocuser
         private void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
         {
             DirectoryInfo di = new DirectoryInfo("imgTemp");
-            string filePath =
-    di.GetFiles()
-      .Select(fi => fi.FullName)
-      .FirstOrDefault();
-
+            string filePath = di.GetFiles().Select(fi => fi.FullName).FirstOrDefault();
 
             if (File.Exists(filePath))
             {
-
                 int maxWaitTime = 10000; // milliseconds
                 int timeWaited = 0;
                 while (IsFileLocked(filePath) && timeWaited < maxWaitTime)
@@ -144,7 +142,6 @@ namespace AutoFocuser
                     System.Threading.Thread.Sleep(100); // Wait for 100 milliseconds
                     timeWaited += 100;
                 }
-
                 if (IsFileLocked(filePath))
                 {
                     // File is still locked after waiting, so display an error message
@@ -164,7 +161,6 @@ namespace AutoFocuser
                             _timer.Enabled = false;
                             _timer.Dispose();
                             _timer = null;
-
                         }
                     }
                 }
@@ -192,10 +188,10 @@ namespace AutoFocuser
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
-            if (trackBar1.Value != 0)
+            if (ZoomTrackBar.Value != 0)
             {
                 pictureBox1.Image = null;
-                pictureBox1.Image = ZoomPicture(org.Image, new System.Drawing.Size(trackBar1.Value, trackBar1.Value));
+                pictureBox1.Image = ZoomPicture(org.Image, new System.Drawing.Size(ZoomTrackBar.Value, ZoomTrackBar.Value));
             }
         }
 
@@ -392,26 +388,26 @@ namespace AutoFocuser
             Blob blobInside = blobsInside[biggestBlobInsideIndex];
 
             savedBlob = blobInside;
-                List<IntPoint> edgePoints = blobCounter2.GetBlobsEdgePoints(savedBlob);
-                List<IntPoint> hull = grahamConvexHull.FindHull(edgePoints);
-                // Calculate desired circle diameter
-                int circleDiameter = int.Parse(outerDiameterTextBox.Text);
+            List<IntPoint> edgePoints = blobCounter2.GetBlobsEdgePoints(savedBlob);
+            List<IntPoint> hull = grahamConvexHull.FindHull(edgePoints);
+            // Calculate desired circle diameter
+            int circleDiameter = int.Parse(outerDiameterTextBox.Text);
 
-                // Calculate circle bounds
-                int circleRadius = circleDiameter / 2;
-                int circleX = (int)savedBlob.CenterOfGravity.X - circleRadius;
-                int circleY = (int)savedBlob.CenterOfGravity.Y - circleRadius;
-                hfd = CalcHfd(starbg, circleDiameter);
-                int circleXHFD = (int)(savedBlob.CenterOfGravity.X - hfd / 2);
-                int circleYHFD = (int)(savedBlob.CenterOfGravity.Y - hfd / 2);
+            // Calculate circle bounds
+            int circleRadius = circleDiameter / 2;
+            int circleX = (int)savedBlob.CenterOfGravity.X - circleRadius;
+            int circleY = (int)savedBlob.CenterOfGravity.Y - circleRadius;
+            hfd = CalcHfd(starbg, circleDiameter);
+            int circleXHFD = (int)(savedBlob.CenterOfGravity.X - hfd / 2);
+            int circleYHFD = (int)(savedBlob.CenterOfGravity.Y - hfd / 2);
 
-                using (Graphics gh = Graphics.FromImage(starbg))
-                {
-                    gh.DrawEllipse(new Pen(Color.Red, 2), circleX, circleY, circleDiameter, circleDiameter);
-                    gh.DrawEllipse(new Pen(Color.Green, 2), circleXHFD, circleYHFD, hfd, hfd);
-                    gh.DrawPolygon(new Pen(Color.Blue, 3), hull.Select(p => new PointF(p.X, p.Y)).ToArray());
-                }
-            
+            using (Graphics gh = Graphics.FromImage(starbg))
+            {
+                gh.DrawEllipse(new Pen(Color.Red, 2), circleX, circleY, circleDiameter, circleDiameter);
+                gh.DrawEllipse(new Pen(Color.Green, 2), circleXHFD, circleYHFD, hfd, hfd);
+                gh.DrawPolygon(new Pen(Color.Blue, 3), hull.Select(p => new PointF(p.X, p.Y)).ToArray());
+            }
+
 
             // Update picture box
             pictureBox1.Invoke(new Action(() => { pictureBox1.Image = starbg; }));
@@ -421,6 +417,7 @@ namespace AutoFocuser
                 panel1.AutoScrollPosition = new System.Drawing.Point((int)blobs[0].CenterOfGravity.X - panel1.Width / 2, (int)blobs[0].CenterOfGravity.Y - panel1.Height / 2);
             }));
             hfdLabel.Invoke(new Action(() => { hfdLabel.Text = "HFD: " + hfd.ToString(); }));
+            ZoomTrackBar.Invoke(new Action(() => { ZoomTrackBar.Enabled = true; }));
         }
 
         System.Drawing.Image ZoomPicture(System.Drawing.Image img, System.Drawing.Size size)
@@ -633,6 +630,23 @@ namespace AutoFocuser
         {
             try { Invoke((Action)delegate { MainProgressBar.Value = progress; }); }
             catch (Exception ex) { ReportError(ex.Message, false); }
+        }
+
+        private void CounterclockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (CounterclockwiseCheckBox.Checked == true)
+                ClockwiseCheckBox.Checked = false;
+        }
+
+        private void ClockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (ClockwiseCheckBox.Checked == true)
+                CounterclockwiseCheckBox.Checked = false;
+        }
+
+        private void HomingButton_Click(object sender, EventArgs e)
+        {
+            serialPort1.Write("CallHoming");
         }
 
         private void MainCamera_LiveViewUpdated(Camera sender, Stream img)
