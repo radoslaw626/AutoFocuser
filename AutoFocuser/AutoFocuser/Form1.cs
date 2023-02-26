@@ -23,11 +23,16 @@ using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using Emgu.CV.Reg;
 using System.Runtime.CompilerServices;
+using System.Windows.Forms.DataVisualization.Charting;
+using Emgu.CV.Features2D;
 
 namespace AutoFocuser
 {
     public partial class Form1 : Form
     {
+        private static System.Timers.Timer _timer;
+        private static bool _imageConverted = false;
+        private static bool _imageSaved = false;
 
         CanonAPI APIHandler;
         Camera MainCamera;
@@ -104,87 +109,21 @@ namespace AutoFocuser
 
         private void button1_Click(object sender, EventArgs e)
         {
-
-            _imageConverted = false;
-            System.IO.DirectoryInfo di = new DirectoryInfo("imgTemp");
-            foreach (FileInfo file in di.GetFiles())
+            MeasuredImage measuredImage = MeasureHFD(int.Parse(ThresholdTextBox.Text), int.Parse(outerDiameterTextBox.Text));
+            pictureBox1.Invoke(new Action(() => { pictureBox1.Image = measuredImage.Image; }));
+            org.Image = measuredImage.Image;
+            hfdLabel.Invoke(new Action(() => { hfdLabel.Text = "HFD: " + measuredImage.HFDValue.ToString(); }));
+            ZoomTrackBar.Invoke(new Action(() => { ZoomTrackBar.Enabled = true; }));
+            if (measuredImage.Processed == true)
             {
-                file.Delete();
-            }
-            TakeAndDownloadImage();
-        }
-
-        private static System.Timers.Timer _timer;
-        private static bool _imageConverted = false;
-
-        public void TakeAndDownloadImage()
-        {
-            MainCamera.TakePhotoShutterAsync();
-            // start timer to wait for image to be taken and downloaded
-            _timer = new System.Timers.Timer(1000); // set timer interval to 1 second
-            _timer.Elapsed += OnTimedEvent; // assign event handler
-            _timer.AutoReset = true; // set timer to repeat
-            _timer.Enabled = true; // start timer
-        }
-
-
-        private void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
-        {
-            DirectoryInfo di = new DirectoryInfo("imgTemp");
-            string filePath = di.GetFiles().Select(fi => fi.FullName).FirstOrDefault();
-
-            if (File.Exists(filePath))
-            {
-                int maxWaitTime = 10000; // milliseconds
-                int timeWaited = 0;
-                while (IsFileLocked(filePath) && timeWaited < maxWaitTime)
+                panel1.Invoke(new Action(() =>
                 {
-                    System.Threading.Thread.Sleep(100); // Wait for 100 milliseconds
-                    timeWaited += 100;
-                }
-                if (IsFileLocked(filePath))
-                {
-                    // File is still locked after waiting, so display an error message
-                    System.Windows.Forms.MessageBox.Show("The file is still in use and cannot be accessed.");
-                }
-                else
-                {
-                    if (_imageConverted == false)
-                    {
-                        using (Stream bmpStream = System.IO.File.Open(filePath, System.IO.FileMode.Open))
-                        {
-                            Bitmap bitmap;
-                            System.Drawing.Image imagesssss = System.Drawing.Image.FromStream(bmpStream);
-                            bitmap = new Bitmap(imagesssss);
-                            ProcessImage(bitmap);
-                            _imageConverted = true;
-                            _timer.Enabled = false;
-                            _timer.Dispose();
-                            _timer = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        public static bool IsFileLocked(string filePath)
-        {
-            try
-            {
-                using (FileStream stream = File.Open(filePath, FileMode.Open, System.IO.FileAccess.ReadWrite, FileShare.None))
-                {
-                    stream.Close();
-                }
-            }
-            catch (IOException)
-            {
-                // The file is locked by another process
-                return true;
+                    panel1.AutoScrollPosition = new System.Drawing.Point((int)measuredImage.Blobs[0].CenterOfGravity.X - panel1.Width / 2, (int)measuredImage.Blobs[0].CenterOfGravity.Y - panel1.Height / 2);
+                }));
             }
 
-            // The file is not locked
-            return false;
         }
+
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
@@ -302,210 +241,26 @@ namespace AutoFocuser
             catch (Exception ex) { ReportError(ex.Message, false); }
         }
 
-        #endregion
-
-        #region Methods
-        private void ProcessImage(Bitmap image)
+        private void CounterclockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            image.Save("C:\\Users\\mical\\Desktop\\imageStart.bmp");
-            Grayscale grayscaleFilter = new Grayscale(0.2125, 0.7154, 0.0721);
-            Bitmap grayImage = grayscaleFilter.Apply(image);
-            AForge.Imaging.Filters.Threshold thresholdFilter = new AForge.Imaging.Filters.Threshold(int.Parse(ThresholdTextBox.Text));
-            Bitmap thresholdImage = thresholdFilter.Apply(grayImage);
-            thresholdImage.Save("C:\\Users\\mical\\Desktop\\thresholdImage.bmp");
-            // Apply blob counter to detect objects in the image
-            BlobCounter blobCounter = new BlobCounter();
-            blobCounter.FilterBlobs = true;
-            blobCounter.MinHeight = 10;
-            blobCounter.MinWidth = 10;
-            blobCounter.ObjectsOrder = ObjectsOrder.Size;
-            blobCounter.ProcessImage(thresholdImage);
-
-            SimpleShapeChecker simpleShapeChecker = new SimpleShapeChecker();
-            GrahamConvexHull grahamConvexHull = new GrahamConvexHull();
-            float hfd = -1;
-            // Get information about objects in the image
-            Blob[] blobs = blobCounter.GetObjectsInformation();
-            Bitmap starbg = null;
-            int biggestBlobIndex = -1;
-            int biggestBlobArea = -1;
-            for (int i = 0; i < blobs.Length; i++)
-            {
-                if (blobs[i].Area > biggestBlobArea)
-                {
-                    biggestBlobIndex = i;
-                    biggestBlobArea = blobs[i].Area;
-                }
-            }
-            if (blobs.Length == 0)
-                return;
-
-            Blob blob = blobs[biggestBlobIndex];
-
-            Graphics g = Graphics.FromImage(image);
-
-            blobCounter.ExtractBlobsImage(thresholdImage, blob, true);
-            Bitmap star = blob.Image.ToManagedImage();
-            star.Save("C:\\Users\\mical\\Desktop\\blob.bmp");
-            //AForge.Imaging.Filters.Invert invertFilter = new AForge.Imaging.Filters.Invert();
-            //star = invertFilter.Apply(star);
-
-            System.Drawing.Rectangle expandedRectangle = new System.Drawing.Rectangle(
-            blob.Rectangle.X - 200,
-            blob.Rectangle.Y - 200,
-            blob.Rectangle.Width + 400,
-            blob.Rectangle.Height + 400);
-
-            // Ensure the expanded rectangle stays within the bounds of the original image
-            expandedRectangle.Intersect(new System.Drawing.Rectangle(0, 0, star.Width, star.Height));
-
-            // Crop the image to just include the expanded bounding rectangle
-            starbg = star.Clone(expandedRectangle, image.PixelFormat);
-
-
-            Blob savedBlob = null;
-            BlobCounter blobCounter2 = new BlobCounter();
-            blobCounter2.FilterBlobs = true;
-            blobCounter2.MinHeight = 10;
-            blobCounter2.MinWidth = 10;
-            blobCounter2.ObjectsOrder = ObjectsOrder.Size;
-            blobCounter2.ProcessImage(starbg);
-            Blob[] blobsInside = blobCounter2.GetObjectsInformation();
-
-            int biggestBlobInsideIndex = -1;
-            int biggestBlobInsideArea = -1;
-
-            for (int i = 0; i < blobsInside.Length; i++)
-            {
-                if (blobsInside[i].Area > biggestBlobInsideArea)
-                {
-                    biggestBlobInsideIndex = i;
-                    biggestBlobInsideArea = blobsInside[i].Area;
-                }
-            }
-            if (blobsInside.Length == 0)
-                return;
-            Blob blobInside = blobsInside[biggestBlobInsideIndex];
-
-            savedBlob = blobInside;
-            List<IntPoint> edgePoints = blobCounter2.GetBlobsEdgePoints(savedBlob);
-            List<IntPoint> hull = grahamConvexHull.FindHull(edgePoints);
-            // Calculate desired circle diameter
-            int circleDiameter = int.Parse(outerDiameterTextBox.Text);
-
-            // Calculate circle bounds
-            int circleRadius = circleDiameter / 2;
-            int circleX = (int)savedBlob.CenterOfGravity.X - circleRadius;
-            int circleY = (int)savedBlob.CenterOfGravity.Y - circleRadius;
-            hfd = CalcHfd(starbg, circleDiameter);
-            int circleXHFD = (int)(savedBlob.CenterOfGravity.X - hfd / 2);
-            int circleYHFD = (int)(savedBlob.CenterOfGravity.Y - hfd / 2);
-
-            using (Graphics gh = Graphics.FromImage(starbg))
-            {
-                gh.DrawEllipse(new Pen(Color.Red, 2), circleX, circleY, circleDiameter, circleDiameter);
-                gh.DrawEllipse(new Pen(Color.Green, 2), circleXHFD, circleYHFD, hfd, hfd);
-                gh.DrawPolygon(new Pen(Color.Blue, 3), hull.Select(p => new PointF(p.X, p.Y)).ToArray());
-            }
-
-
-            // Update picture box
-            pictureBox1.Invoke(new Action(() => { pictureBox1.Image = starbg; }));
-            org.Image = starbg;
-            panel1.Invoke(new Action(() =>
-            {
-                panel1.AutoScrollPosition = new System.Drawing.Point((int)blobs[0].CenterOfGravity.X - panel1.Width / 2, (int)blobs[0].CenterOfGravity.Y - panel1.Height / 2);
-            }));
-            hfdLabel.Invoke(new Action(() => { hfdLabel.Text = "HFD: " + hfd.ToString(); }));
-            ZoomTrackBar.Invoke(new Action(() => { ZoomTrackBar.Enabled = true; }));
+            if (CounterclockwiseCheckBox.Checked == true)
+                ClockwiseCheckBox.Checked = false;
         }
 
-        System.Drawing.Image ZoomPicture(System.Drawing.Image img, System.Drawing.Size size)
+        private void ClockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width),
-                Convert.ToInt32(img.Height * size.Height));
-            Graphics g = Graphics.FromImage(bm);
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            return bm;
+            if (ClockwiseCheckBox.Checked == true)
+                CounterclockwiseCheckBox.Checked = false;
         }
 
-        #endregion
-
-        #region HalfFluxDiameter
-
-        public static byte[] BitmapToByteArray(Bitmap bitmap)
+        private void HomingButton_Click(object sender, EventArgs e)
         {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                bitmap.Save(ms, ImageFormat.Bmp);
-                return ms.ToArray();
-            }
+            serialPort1.Write("CallHoming");
         }
 
-        float GetPixelValue(Bitmap image, int x, int y)
+        private void AutomaticFocusButton_Click(object sender, EventArgs e)
         {
-            Color pixel = image.GetPixel(x, y);
-            return pixel.GetBrightness();
-        }
-
-
-        float CalcHfd(Bitmap inImage, int inOuterDiameter)
-        {
-            // Sum up all pixel values in whole circle
-            float outerRadius = inOuterDiameter / 2f;
-            float sum = 0, sumDist = 0;
-            int centerX = (int)Math.Ceiling(inImage.Width / 2f);
-            int centerY = (int)Math.Ceiling(inImage.Height / 2f);
-
-            for (int x = 0; x < inImage.Width; x++)
-            {
-                for (int y = 0; y < inImage.Height; y++)
-                {
-                    if (InsideCircle(x, y, centerX, centerY, outerRadius))
-                    {
-                        sum += GetPixelValue(inImage, x, y);
-                        sumDist += GetPixelValue(inImage, x, y) *
-                                   (float)Math.Sqrt(Math.Pow(x - centerX, 2.0f) + Math.Pow(y - centerY, 2.0f));
-                    }
-                }
-            }
-
-            // NOTE: Multiplying with 2 is required since actually just the HFR is calculated above
-            return (sum != 0 ? 2f * sumDist / sum : (float)Math.Sqrt(2) * outerRadius);
-        }
-
-        bool InsideCircle(float inX, float inY, float inCenterX, float inCenterY, float inRadius)
-        {
-            return Math.Pow(inX - inCenterX, 2.0) + Math.Pow(inY - inCenterY, 2.0) <= Math.Pow(inRadius, 2.0);
-        }
-
-
-        #endregion
-
-        #region Subroutines
-
-        private void CloseSession()
-        {
-            MainCamera.CloseSession();
-            AvCoBox.Items.Clear();
-            TvCoBox.Items.Clear();
-            ISOCoBox.Items.Clear();
-            SettingsGroupBox.Enabled = false;
-            LiveViewGroupBox.Enabled = false;
-
-            SessionButton.Text = "Open Session";
-            SessionLabel.Text = "No open session";
-            LiveViewButton.Text = "Start LV";
-        }
-
-        private void LiveViewGroupBox_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void MainForm_Load(object sender, EventArgs e)
-        {
-
+            AutomaticMeasurement(0, 18000, 8, 600, 1);
         }
 
         private void LiveViewButton_Click(object sender, EventArgs e)
@@ -545,6 +300,360 @@ namespace AutoFocuser
                     }
                 }
             }
+        }
+
+
+        #endregion
+
+        #region Methods
+
+
+
+        public Bitmap TakeAndDownloadImage()
+        {
+            TakeImage();
+            while (_imageSaved == false)
+            {
+                wait(50);
+            }
+            _imageSaved = false;
+            DirectoryInfo di = new DirectoryInfo("imgTemp");
+            string filePath = di.GetFiles().Select(fi => fi.FullName).FirstOrDefault();
+            using (Stream bmpStream = System.IO.File.Open(filePath, System.IO.FileMode.Open))
+            {
+                Bitmap bitmap;
+                System.Drawing.Image images = System.Drawing.Image.FromStream(bmpStream);
+                bitmap = new Bitmap(images);
+                return bitmap;
+            }
+        }
+
+        public void wait(int milliseconds)
+        {
+            var timer1 = new System.Windows.Forms.Timer();
+            if (milliseconds == 0 || milliseconds < 0) return;
+            timer1.Interval = milliseconds;
+            timer1.Enabled = true;
+            timer1.Start();
+
+            timer1.Tick += (s, e) =>
+            {
+                timer1.Enabled = false;
+                timer1.Stop();
+            };
+
+            while (timer1.Enabled)
+            {
+                System.Windows.Forms.Application.DoEvents();
+            }
+        }
+
+        private void TakeImage()
+        {
+            MainCamera.TakePhotoShutterAsync();
+            // start timer to wait for image to be taken and downloaded
+            _timer = new System.Timers.Timer(1000); // set timer interval to 1 second
+            _timer.Elapsed += OnTimedEvent; // assign event handler
+            _timer.AutoReset = true; 
+            _timer.Enabled = true; 
+
+        }
+
+
+        private void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
+        {
+            DirectoryInfo di = new DirectoryInfo("imgTemp");
+            string filePath = di.GetFiles().Select(fi => fi.FullName).FirstOrDefault();
+
+            if (File.Exists(filePath))
+            {
+                int maxWaitTime = 10000; // milliseconds
+                int timeWaited = 0;
+                while (IsFileLocked(filePath) && timeWaited < maxWaitTime)
+                {
+                    System.Threading.Thread.Sleep(100); // Wait for 100 milliseconds
+                    timeWaited += 100;
+                }
+                if (IsFileLocked(filePath))
+                {
+                    // File is still locked after waiting, so display an error message
+                    System.Windows.Forms.MessageBox.Show("The file is still in use and cannot be accessed.");
+                }
+                else
+                {
+                    if (_imageConverted == false)
+                    {
+                        _imageSaved = true;
+                        _imageConverted = true;
+                        _timer.Enabled = false;
+                        _timer.Dispose();
+                        _timer = null;
+                    }
+                }
+            }
+        }
+
+        public static bool IsFileLocked(string filePath)
+        {
+            try
+            {
+                using (FileStream stream = File.Open(filePath, FileMode.Open, System.IO.FileAccess.ReadWrite, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                // The file is locked by another process
+                return true;
+            }
+
+            // The file is not locked
+            return false;
+        }
+
+
+        private void AutomaticMeasurement(int startingPosition, int maximumPosition, int threshold, int outerCircleDiameter, int iteration)
+        {
+            Series hfd = null;
+            HFDChart.Series.Clear();
+            if (HFDChart.Series.Count == 0)
+            {
+                hfd = HFDChart.Series.Add("HFD");
+                hfd.ChartType = SeriesChartType.Line;
+            }
+            int currentPosition = startingPosition;
+            int step = (maximumPosition - startingPosition) / 10;
+            MeasuredImage measuredImage;
+            for (int i = 0; i < 10; i++)
+            {
+                wait(200);
+                measuredImage = MeasureHFD(threshold, outerCircleDiameter);
+                wait(200);
+                if (measuredImage.Image != null)
+                    measuredImage.Image.Save($"C:\\Users\\mical\\Desktop\\autoTest\\{iteration}{i}.bmp");
+                if (measuredImage.HFDValue != 0)
+                    hfd.Points.AddXY(currentPosition, measuredImage.HFDValue);
+                serialPort1.Write($"{step}, 0");
+                currentPosition += step;
+                wait(4000 - (500 * iteration));
+            }
+
+            var dataPoints = hfd.Points.ToList();
+            dataPoints.Sort((p1, p2) => p1.YValues[0].CompareTo(p2.YValues[0]));
+            var lowestPercent = dataPoints.Take((int)(dataPoints.Count * 1 / (iteration * iteration)));
+
+            var xValues = lowestPercent.Select(p => p.XValue).ToList();
+            var lowestPos = (int)xValues.Min();
+            var highestPos = (int)xValues.Max();
+            int stepsToNewStartingPos = currentPosition - lowestPos;
+            serialPort1.Write($"{stepsToNewStartingPos}, 1");
+            wait(15000 / iteration);
+            if (lowestPos != highestPos)
+            {
+                AutomaticMeasurement(lowestPos, highestPos, (int)(threshold * 1.75), outerCircleDiameter / iteration, iteration += 1);
+            }
+            else
+            {
+                AutomaticResultHFDLabel.Text = ("Focus set at the position: " + highestPos.ToString());
+            }
+        }
+
+        private MeasuredImage ProcessImage(Bitmap image, int threshold, int outerCircleDiameter)
+        {
+            Grayscale grayscaleFilter = new Grayscale(0.2125, 0.7154, 0.0721);
+            Bitmap grayImage = grayscaleFilter.Apply(image);
+            AForge.Imaging.Filters.Threshold thresholdFilter = new AForge.Imaging.Filters.Threshold(threshold);
+            Bitmap thresholdImage = thresholdFilter.Apply(grayImage);
+            // Apply blob counter to detect objects in the image
+            BlobCounter blobCounter = new BlobCounter();
+            blobCounter.FilterBlobs = true;
+            blobCounter.MinHeight = 10;
+            blobCounter.MinWidth = 10;
+            blobCounter.ObjectsOrder = ObjectsOrder.Size;
+            blobCounter.ProcessImage(thresholdImage);
+
+            SimpleShapeChecker simpleShapeChecker = new SimpleShapeChecker();
+            GrahamConvexHull grahamConvexHull = new GrahamConvexHull();
+            float hfd = -1;
+            // Get information about objects in the image
+            Blob[] blobs = blobCounter.GetObjectsInformation();
+            Bitmap starbg = null;
+            int biggestBlobIndex = -1;
+            int biggestBlobArea = -1;
+            for (int i = 0; i < blobs.Length; i++)
+            {
+                if (blobs[i].Area > biggestBlobArea)
+                {
+                    biggestBlobIndex = i;
+                    biggestBlobArea = blobs[i].Area;
+                }
+            }
+            if (blobs.Length == 0)
+                return new MeasuredImage();
+
+            Blob blob = blobs[biggestBlobIndex];
+
+            Graphics g = Graphics.FromImage(image);
+
+            blobCounter.ExtractBlobsImage(thresholdImage, blob, true);
+            Bitmap star = blob.Image.ToManagedImage();
+
+            System.Drawing.Rectangle expandedRectangle = new System.Drawing.Rectangle(
+            blob.Rectangle.X - 200,
+            blob.Rectangle.Y - 200,
+            blob.Rectangle.Width + 400,
+            blob.Rectangle.Height + 400);
+
+            // Ensure the expanded rectangle stays within the bounds of the original image
+            expandedRectangle.Intersect(new System.Drawing.Rectangle(0, 0, star.Width, star.Height));
+
+            // Crop the image to just include the expanded bounding rectangle
+            starbg = star.Clone(expandedRectangle, image.PixelFormat);
+
+
+            Blob savedBlob = null;
+            BlobCounter blobCounter2 = new BlobCounter();
+            blobCounter2.FilterBlobs = true;
+            blobCounter2.MinHeight = 10;
+            blobCounter2.MinWidth = 10;
+            blobCounter2.ObjectsOrder = ObjectsOrder.Size;
+            blobCounter2.ProcessImage(starbg);
+            Blob[] blobsInside = blobCounter2.GetObjectsInformation();
+
+            int biggestBlobInsideIndex = -1;
+            int biggestBlobInsideArea = -1;
+
+            for (int i = 0; i < blobsInside.Length; i++)
+            {
+                if (blobsInside[i].Area > biggestBlobInsideArea)
+                {
+                    biggestBlobInsideIndex = i;
+                    biggestBlobInsideArea = blobsInside[i].Area;
+                }
+            }
+            if (blobsInside.Length == 0)
+                return new MeasuredImage();
+            Blob blobInside = blobsInside[biggestBlobInsideIndex];
+
+            savedBlob = blobInside;
+            List<IntPoint> edgePoints = blobCounter2.GetBlobsEdgePoints(savedBlob);
+            List<IntPoint> hull = grahamConvexHull.FindHull(edgePoints);
+            // Calculate desired circle diameter
+            int circleDiameter = outerCircleDiameter;
+
+            // Calculate circle bounds
+            int circleRadius = circleDiameter / 2;
+            int circleX = (int)savedBlob.CenterOfGravity.X - circleRadius;
+            int circleY = (int)savedBlob.CenterOfGravity.Y - circleRadius;
+            hfd = CalcHfd(starbg, circleDiameter);
+            int circleXHFD = (int)(savedBlob.CenterOfGravity.X - hfd / 2);
+            int circleYHFD = (int)(savedBlob.CenterOfGravity.Y - hfd / 2);
+
+            using (Graphics gh = Graphics.FromImage(starbg))
+            {
+                gh.DrawEllipse(new Pen(Color.Red, 2), circleX, circleY, circleDiameter, circleDiameter);
+                gh.DrawEllipse(new Pen(Color.Green, 2), circleXHFD, circleYHFD, hfd, hfd);
+                gh.DrawPolygon(new Pen(Color.Blue, 3), hull.Select(p => new PointF(p.X, p.Y)).ToArray());
+            }
+            MeasuredImage measured = new MeasuredImage()
+            {
+                Blobs = blobs.ToList(),
+                Image = starbg,
+                HFDValue = hfd
+            };
+            return measured;
+        }
+
+        System.Drawing.Image ZoomPicture(System.Drawing.Image img, System.Drawing.Size size)
+        {
+            Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width),
+                Convert.ToInt32(img.Height * size.Height));
+            Graphics g = Graphics.FromImage(bm);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            return bm;
+        }
+
+        #endregion
+
+        #region HalfFluxDiameter
+
+
+        private MeasuredImage MeasureHFD(int threshold, int outerCircleDiameter)
+        {
+            _imageConverted = false;
+            System.IO.DirectoryInfo di = new DirectoryInfo("imgTemp");
+            foreach (FileInfo file in di.GetFiles())
+            {
+                file.Delete();
+            }
+            Bitmap takenPhoto = TakeAndDownloadImage();
+            var processedImage = ProcessImage(takenPhoto, threshold, outerCircleDiameter);
+            return processedImage;
+        }
+
+
+        public static byte[] BitmapToByteArray(Bitmap bitmap)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bitmap.Save(ms, ImageFormat.Bmp);
+                return ms.ToArray();
+            }
+        }
+
+        float GetPixelValue(Bitmap image, int x, int y)
+        {
+            Color pixel = image.GetPixel(x, y);
+            return pixel.GetBrightness();
+        }
+
+
+        float CalcHfd(Bitmap inImage, int inOuterDiameter)
+        {
+            // Sum up all pixel values in whole circle
+            float outerRadius = inOuterDiameter / 2f;
+            float sum = 0, sumDist = 0;
+            int centerX = (int)Math.Ceiling(inImage.Width / 2f);
+            int centerY = (int)Math.Ceiling(inImage.Height / 2f);
+
+            for (int x = 0; x < inImage.Width; x++)
+            {
+                for (int y = 0; y < inImage.Height; y++)
+                {
+                    if (InsideCircle(x, y, centerX, centerY, outerRadius))
+                    {
+                        sum += GetPixelValue(inImage, x, y);
+                        sumDist += GetPixelValue(inImage, x, y) *
+                                   (float)Math.Sqrt(Math.Pow(x - centerX, 2.0f) + Math.Pow(y - centerY, 2.0f));
+                    }
+                }
+            }
+            return (sum != 0 ? 2f * sumDist / sum : (float)Math.Sqrt(2) * outerRadius);
+        }
+
+        bool InsideCircle(float inX, float inY, float inCenterX, float inCenterY, float inRadius)
+        {
+            return Math.Pow(inX - inCenterX, 2.0) + Math.Pow(inY - inCenterY, 2.0) <= Math.Pow(inRadius, 2.0);
+        }
+
+
+        #endregion
+
+        #region Subroutines
+
+        private void CloseSession()
+        {
+            MainCamera.CloseSession();
+            AvCoBox.Items.Clear();
+            TvCoBox.Items.Clear();
+            ISOCoBox.Items.Clear();
+            SettingsGroupBox.Enabled = false;
+            LiveViewGroupBox.Enabled = false;
+
+            SessionButton.Text = "Open Session";
+            SessionLabel.Text = "No open session";
+            LiveViewButton.Text = "Start LV";
         }
 
         private void RefreshCamera()
@@ -632,23 +741,6 @@ namespace AutoFocuser
             catch (Exception ex) { ReportError(ex.Message, false); }
         }
 
-        private void CounterclockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (CounterclockwiseCheckBox.Checked == true)
-                ClockwiseCheckBox.Checked = false;
-        }
-
-        private void ClockwiseCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (ClockwiseCheckBox.Checked == true)
-                CounterclockwiseCheckBox.Checked = false;
-        }
-
-        private void HomingButton_Click(object sender, EventArgs e)
-        {
-            serialPort1.Write("CallHoming");
-        }
-
         private void MainCamera_LiveViewUpdated(Camera sender, Stream img)
         {
             try
@@ -684,7 +776,6 @@ namespace AutoFocuser
         {
             ReportError(ex.Message, true);
         }
-
 
         #endregion
     }

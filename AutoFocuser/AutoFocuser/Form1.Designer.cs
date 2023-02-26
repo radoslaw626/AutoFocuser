@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.MoveStepperButton = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -71,6 +73,7 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.stepperMovementPanel = new System.Windows.Forms.Panel();
+            this.HomingButton = new System.Windows.Forms.Button();
             this.CounterclockwiseCheckBox = new System.Windows.Forms.CheckBox();
             this.ClockwiseCheckBox = new System.Windows.Forms.CheckBox();
             this.ThresholdLabel = new System.Windows.Forms.Label();
@@ -78,10 +81,13 @@
             this.label8 = new System.Windows.Forms.Label();
             this.outerDiameterTextBox = new System.Windows.Forms.TextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.AutomaticFocusButton = new System.Windows.Forms.Button();
+            this.HFDChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.ControllerConnectionLabel = new System.Windows.Forms.Label();
             this.tabPage4 = new System.Windows.Forms.TabPage();
-            this.HomingButton = new System.Windows.Forms.Button();
+            this.label9 = new System.Windows.Forms.Label();
+            this.AutomaticResultHFDLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ZoomTrackBar)).BeginInit();
             this.panel1.SuspendLayout();
@@ -94,6 +100,8 @@
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.stepperMovementPanel.SuspendLayout();
+            this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.HFDChart)).BeginInit();
             this.tabPage3.SuspendLayout();
             this.tabPage4.SuspendLayout();
             this.SuspendLayout();
@@ -509,6 +517,16 @@
             this.stepperMovementPanel.Size = new System.Drawing.Size(419, 144);
             this.stepperMovementPanel.TabIndex = 15;
             // 
+            // HomingButton
+            // 
+            this.HomingButton.Location = new System.Drawing.Point(314, 59);
+            this.HomingButton.Name = "HomingButton";
+            this.HomingButton.Size = new System.Drawing.Size(86, 55);
+            this.HomingButton.TabIndex = 15;
+            this.HomingButton.Text = "Homing";
+            this.HomingButton.UseVisualStyleBackColor = true;
+            this.HomingButton.Click += new System.EventHandler(this.HomingButton_Click);
+            // 
             // CounterclockwiseCheckBox
             // 
             this.CounterclockwiseCheckBox.AutoSize = true;
@@ -567,6 +585,10 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.AutomaticResultHFDLabel);
+            this.tabPage2.Controls.Add(this.label9);
+            this.tabPage2.Controls.Add(this.AutomaticFocusButton);
+            this.tabPage2.Controls.Add(this.HFDChart);
             this.tabPage2.Location = new System.Drawing.Point(4, 25);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -574,6 +596,28 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Automatic";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // AutomaticFocusButton
+            // 
+            this.AutomaticFocusButton.Location = new System.Drawing.Point(640, 416);
+            this.AutomaticFocusButton.Name = "AutomaticFocusButton";
+            this.AutomaticFocusButton.Size = new System.Drawing.Size(297, 62);
+            this.AutomaticFocusButton.TabIndex = 1;
+            this.AutomaticFocusButton.Text = "Automatic Focus";
+            this.AutomaticFocusButton.UseVisualStyleBackColor = true;
+            this.AutomaticFocusButton.Click += new System.EventHandler(this.AutomaticFocusButton_Click);
+            // 
+            // HFDChart
+            // 
+            chartArea1.Name = "ChartArea1";
+            this.HFDChart.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            this.HFDChart.Legends.Add(legend1);
+            this.HFDChart.Location = new System.Drawing.Point(30, 54);
+            this.HFDChart.Name = "HFDChart";
+            this.HFDChart.Size = new System.Drawing.Size(989, 300);
+            this.HFDChart.TabIndex = 0;
+            this.HFDChart.Text = "chart1";
             // 
             // tabPage3
             // 
@@ -607,15 +651,22 @@
             this.tabPage4.Text = "Camera";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
-            // HomingButton
+            // label9
             // 
-            this.HomingButton.Location = new System.Drawing.Point(314, 59);
-            this.HomingButton.Name = "HomingButton";
-            this.HomingButton.Size = new System.Drawing.Size(86, 55);
-            this.HomingButton.TabIndex = 15;
-            this.HomingButton.Text = "Homing";
-            this.HomingButton.UseVisualStyleBackColor = true;
-            this.HomingButton.Click += new System.EventHandler(this.HomingButton_Click);
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(638, 496);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(381, 16);
+            this.label9.TabIndex = 2;
+            this.label9.Text = "*Make sure to home the position before starting automatic focus";
+            // 
+            // AutomaticResultHFDLabel
+            // 
+            this.AutomaticResultHFDLabel.AutoSize = true;
+            this.AutomaticResultHFDLabel.Location = new System.Drawing.Point(58, 416);
+            this.AutomaticResultHFDLabel.Name = "AutomaticResultHFDLabel";
+            this.AutomaticResultHFDLabel.Size = new System.Drawing.Size(0, 16);
+            this.AutomaticResultHFDLabel.TabIndex = 3;
             // 
             // Form1
             // 
@@ -647,6 +698,9 @@
             this.tabPage1.PerformLayout();
             this.stepperMovementPanel.ResumeLayout(false);
             this.stepperMovementPanel.PerformLayout();
+            this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.HFDChart)).EndInit();
             this.tabPage3.ResumeLayout(false);
             this.tabPage3.PerformLayout();
             this.tabPage4.ResumeLayout(false);
@@ -708,6 +762,10 @@
         private System.Windows.Forms.CheckBox CounterclockwiseCheckBox;
         private System.Windows.Forms.CheckBox ClockwiseCheckBox;
         private System.Windows.Forms.Button HomingButton;
+        private System.Windows.Forms.Button AutomaticFocusButton;
+        private System.Windows.Forms.DataVisualization.Charting.Chart HFDChart;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label AutomaticResultHFDLabel;
     }
 }
 
